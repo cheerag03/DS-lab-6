@@ -1,104 +1,62 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct CNode{ int data; struct CNode *next; } CNode;
+typedef struct Node{ int data; struct Node *prev,*next; } Node;
 
-CNode* create(int x){ CNode* p=malloc(sizeof(CNode)); p->data=x; p->next=NULL; return p; }
+Node* create(int x){ Node* p=malloc(sizeof(Node)); p->data=x; p->prev=p->next=NULL; return p; }
 
-void insert_first(CNode** tail,int x){
-    CNode* p=create(x);
-    if(!*tail){ *tail=p; p->next=p; return; }
-    p->next = (*tail)->next;
-    (*tail)->next = p;
+void insert_begin(Node** h,int x){
+    Node* p=create(x);
+    if(!*h) *h=p;
+    else{ p->next=*h; (*h)->prev=p; *h=p; }
 }
-
-void insert_last(CNode** tail,int x){
-    insert_first(tail,x);
-    *tail = (*tail)->next;
+void insert_end(Node** h,int x){
+    Node* p=create(x);
+    if(!*h) *h=p;
+    else{ Node* t=*h; while(t->next) t=t->next; t->next=p; p->prev=t; }
 }
-
-void insert_after(CNode** tail,int val,int x){
-    if(!*tail) return;
-    CNode* cur = (*tail)->next;
-    do{
-        if(cur->data==val){
-            CNode* p=create(x);
-            p->next=cur->next;
-            cur->next=p;
-            if(cur==*tail) *tail = p;
-            return;
-        }
-        cur=cur->next;
-    } while(cur!=(*tail)->next);
+void insert_after(Node** h,int val,int x){
+    if(!*h) return;
+    Node* t=*h;
+    while(t && t->data!=val) t=t->next;
+    if(t){ Node* p=create(x); p->next=t->next; p->prev=t; if(t->next) t->next->prev=p; t->next=p; }
 }
-
-void insert_before(CNode** tail,int val,int x){
-    if(!*tail) return;
-    CNode* cur=(*tail)->next, *prev=*tail;
-    do{
-        if(cur->data==val){
-            CNode* p=create(x);
-            p->next=cur;
-            prev->next=p;
-            if(cur==(*tail)->next) (*tail)->next=p;
-            return;
-        }
-        prev=cur;
-        cur=cur->next;
-    } while(cur!=(*tail)->next);
+void insert_before(Node** h,int val,int x){
+    if(!*h) return;
+    if((*h)->data==val){ insert_begin(h,x); return; }
+    Node* t=*h;
+    while(t && t->data!=val) t=t->next;
+    if(t){ Node* p=create(x); p->prev=t->prev; p->next=t; t->prev->next=p; t->prev=p; }
 }
-
-int delete_val(CNode** tail,int val){
-    if(!*tail) return 0;
-    CNode *cur=(*tail)->next, *prev=*tail;
-    do{
-        if(cur->data==val){
-            if(cur==prev){ free(cur); *tail=NULL; return 1; }
-            prev->next=cur->next;
-            if(cur==*tail) *tail=prev;
-            if(cur==(*tail)->next && cur==prev->next) (*tail)->next = cur->next;
-            free(cur);
-            return 1;
-        }
-        prev=cur;
-        cur=cur->next;
-    } while(cur!=(*tail)->next);
-    return 0;
+int delete_value(Node** h,int val){
+    if(!*h) return 0;
+    Node* t=*h;
+    while(t && t->data!=val) t=t->next;
+    if(!t) return 0;
+    if(t==*h){ *h=t->next; if(*h) (*h)->prev=NULL; free(t); return 1; }
+    if(t->next) t->next->prev=t->prev;
+    t->prev->next=t->next;
+    free(t);
+    return 1;
 }
-
-int search(CNode* tail,int val){
-    if(!tail) return -1;
-    CNode* cur=tail->next; int pos=1;
-    do{ if(cur->data==val) return pos; pos++; cur=cur->next; } while(cur!=tail->next);
-    return -1;
-}
-
-int size_cll(CNode* tail){
-    if(!tail) return 0;
-    int c=0; CNode* cur=tail->next;
-    do{ c++; cur=cur->next; } while(cur!=tail->next);
-    return c;
-}
-
-void display(CNode* tail){
-    if(!tail){ printf("Empty\n"); return; }
-    CNode* cur = tail->next;
-    do{ printf("%d ",cur->data); cur=cur->next; } while(cur!=tail->next);
-    printf("%d\n", tail->next->data);
+int search(Node* h,int val){ int pos=1; while(h){ if(h->data==val) return pos; h=h->next; pos++; } return -1; }
+void display(Node* h){
+    if(!h){ printf("Empty\n"); return; }
+    while(h){ printf("%d ",h->data); h=h->next; }
+    printf("\n");
 }
 
 int main(){
-    CNode* tail=NULL;
-    int ch,x,val;
+    Node* head=NULL;
+    int ch,a,b;
     while(scanf("%d",&ch)==1){
-        if(ch==1){ scanf("%d",&x); insert_first(&tail,x); }
-        else if(ch==2){ scanf("%d",&x); insert_last(&tail,x); }
-        else if(ch==3){ scanf("%d %d",&val,&x); insert_after(&tail,val,x); }
-        else if(ch==4){ scanf("%d %d",&val,&x); insert_before(&tail,val,x); }
-        else if(ch==5){ scanf("%d",&val); printf("%d\n", delete_val(&tail,val)); }
-        else if(ch==6){ scanf("%d",&val); printf("%d\n", search(tail,val)); }
-        else if(ch==7){ display(tail); }
-        else if(ch==8){ printf("%d\n", size_cll(tail)); }
+        if(ch==1){ scanf("%d",&a); insert_begin(&head,a); }
+        else if(ch==2){ scanf("%d",&a); insert_end(&head,a); }
+        else if(ch==3){ scanf("%d %d",&a,&b); insert_after(&head,a,b); }
+        else if(ch==4){ scanf("%d %d",&a,&b); insert_before(&head,a,b); }
+        else if(ch==5){ scanf("%d",&a); printf("%d\n", delete_value(&head,a)); }
+        else if(ch==6){ scanf("%d",&a); printf("%d\n", search(head,a)); }
+        else if(ch==7){ display(head); }
         else break;
     }
     return 0;
